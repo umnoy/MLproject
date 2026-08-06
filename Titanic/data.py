@@ -7,6 +7,7 @@ def load_data(train_path, test_path):
 
 
 FEATURES = ["Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked", "Initial"]
+CAT_FEATURES = ["Sex", "Embarked", "Initial"]
 
 #средние в ноутбуке (groupby('Initial')['Age'].mean())
 AGE_BY_INITIAL = {"Mr": 33, "Mrs": 36, "Master": 5, "Miss": 22, "Other": 46}
@@ -35,13 +36,9 @@ def _fill_age(df):
     return df
 
 
-def preprocess_titanic(train_df, test_df):
-    """Препроцессинг Titanic: Title -> заполнение Age по группе -> Embarked/Fare -> one-hot.
-    Все статистики считаются только на train и применяются к train и test одинаково.
-    """
+def clean_titanic(train_df, test_df):
     train_df = _extract_initial(train_df)
     test_df = _extract_initial(test_df)
-
     train_df = _fill_age(train_df)
     test_df = _fill_age(test_df)
 
@@ -50,10 +47,13 @@ def preprocess_titanic(train_df, test_df):
     test_df["Embarked"] = test_df["Embarked"].fillna(embarked_mode)
 
     fare_median = train_df["Fare"].median()
-    train_df["Fare"] = train_df["Fare"].fillna(fare_median)
     test_df["Fare"] = test_df["Fare"].fillna(fare_median)
 
-    X_train = pd.get_dummies(train_df[FEATURES])
-    X_test = pd.get_dummies(test_df[FEATURES])
-    X_train, X_test = X_train.align(X_test, join="left", axis=1, fill_value=0)  # выравниваем колонки train/test
+    return train_df[FEATURES], test_df[FEATURES]
+
+
+def to_onehot(X_train, X_test):
+    X_train = pd.get_dummies(X_train)
+    X_test = pd.get_dummies(X_test)
+    X_train, X_test = X_train.align(X_test, join="left", axis=1, fill_value=0)  # выравниваем колонки
     return X_train, X_test
