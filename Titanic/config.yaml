@@ -1,27 +1,26 @@
 general:
-  experiment_name: "mlp_baseline"
+  experiment_name: mlp_baseline2
   seed: 42
-  task_type: "binary"
+  task_type: binary
+  dataset: titanic
 paths:
-  train_csv: "./data/train.csv"
-  test_csv: "./data/test.csv"
-  output_dir: "./outputs/${general.experiment_name}"
-
+  train_csv: ./data/train.csv
+  test_csv: ./data/test.csv
+  output_dir: ./outputs/${general.experiment_name}
 split:
   n_splits: 5
-
 model:
   params:
-    hidden_dims: [128, 64]
-    dropout_rate: 0.2
-
+    hidden_dims:
+    - 64
+    - 32
+    dropout_rate: 0.3
 training:
-  epochs: 25
-  batch_size: 64
+  device: cuda
+  epochs: 50
+  batch_size: 32
   lr: 0.001
   weight_decay: 0.0001
-  device: "cuda"
-
 dataloader:
-  num_workers: 2
-  pin_memory: true
+  num_workers: 0
+  pin_memory: false
