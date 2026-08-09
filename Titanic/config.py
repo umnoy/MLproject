@@ -2,10 +2,11 @@ from omegaconf import OmegaConf
 
 config = {
     'general': {
-        'experiment_name': 'mlp_baseline2',
-        'seed': 42,
+        'experiment_name': 'scheduler4',
+        'seed': 1,
         'task_type': 'binary',
         'dataset' : 'titanic',
+        'id_column': 'PassengerId'
     },
     'paths': {
         'train_csv': './data/train.csv',

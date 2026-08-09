@@ -42,7 +42,7 @@ def clean_titanic(train_df, test_df):
     train_df = _fill_age(train_df)
     test_df = _fill_age(test_df)
 
-    embarked_mode = train_df["Embarked"].mode()[0]
+    embarked_mode = train_df["Embarked"].mode()[0]#заполнение модой по портам отправления
     train_df["Embarked"] = train_df["Embarked"].fillna(embarked_mode)
     test_df["Embarked"] = test_df["Embarked"].fillna(embarked_mode)
 
@@ -58,7 +58,7 @@ def to_onehot(X_train, X_test):
     X_train, X_test = X_train.align(X_test, join="left", axis=1, fill_value=0)  # выравниваем колонки
     return X_train, X_test
 
-def prepare_titanic_data(train_path: str = "train.csv", test_path: str = "test.csv"):
+def prepare_titanic_data(train_path, test_path, column):
     train_df, test_df = load_data(train_path, test_path)
     
     y_train = train_df["Survived"]
@@ -66,4 +66,4 @@ def prepare_titanic_data(train_path: str = "train.csv", test_path: str = "test.c
     
     X_train, X_test = to_onehot(X_train_raw, X_test_raw)
     
-    return X_train, y_train, X_test
+    return X_train, y_train, X_test, test_df[column]
