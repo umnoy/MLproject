@@ -57,8 +57,7 @@ def train(cfg, device, X, y):
 
         optimizer = torch.optim.Adam(model.parameters(), lr=cfg.training.lr, weight_decay=cfg.training.weight_decay)
         criterion = nn.BCEWithLogitsLoss() if cfg.general.task_type == "binary" else nn.MSELoss()
-        #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=3)
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 10, 0.5)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, cfg.training.scheduler_epochs, cfg.training.scheduler_rate)
 
         best_rmse = float('inf')
         best_model_path = os.path.join(cfg.paths.output_dir, f"model_fold_{fold}.pt")
@@ -73,7 +72,6 @@ def train(cfg, device, X, y):
                 loss = criterion(preds, y_batch)
                 loss.backward()
                 optimizer.step()
-            #scheduler.step(loss) #для plateu
             scheduler.step()
 
             model.eval()
@@ -90,12 +88,14 @@ def train(cfg, device, X, y):
             targ = np.concatenate(val_targets_list).squeeze()
 
             rmse = np.sqrt(mean_squared_error(targ, predi))
-            fold_rmses.append(rmse)
+            
             if rmse < best_rmse:
                 best_rmse = rmse
                 torch.save(model.state_dict(), best_model_path)
 
             print(f'fold {fold}, epoch {epoch}, rmse {rmse:.5f}')
+
+        fold_rmses.append(best_rmse)
 
         model.load_state_dict(torch.load(best_model_path))
         model.eval()

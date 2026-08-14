@@ -2,7 +2,7 @@ from omegaconf import OmegaConf
 
 config = {
     'general': {
-        'experiment_name': 'baseline',
+        'experiment_name': 'optuna',
         'seed': 1,
         'task_type': 'regression',
         'dataset' : 'house_prices',
@@ -28,6 +28,8 @@ config = {
         'batch_size': 16,
         'lr': 1e-3,
         'weight_decay': 1e-5,
+        'scheduler_epochs': 10,
+        'scheduler_rate': 0.5,
     },
     'dataloader': {
         'num_workers': 0,
