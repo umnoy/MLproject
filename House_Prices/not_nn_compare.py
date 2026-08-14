@@ -23,13 +23,16 @@ os.makedirs(save_dir, exist_ok=True)
 
 X, y, X_test, CAT_FEATURES, IDs = prepare_data(train_data_path, test_data_path, dummies=False)
 X_encoded, y, X_test_encoded, _, IDs = prepare_data(train_data_path, test_data_path, dummies=True)
+X_scaled, y, X_test_scaled, _, IDs = prepare_data(train_data_path, test_data_path, dummies=True, scale=True)
 
 cv = KFold(n_splits=5, shuffle=True, random_state=1)
+SCALED_MODELS = {"Ridge", "Lasso", "ElasticNet", "KNN"}
 
 
 def rmse_cv_score(model, X, y, cv):
     scores = cross_val_score(model, X, y, cv=cv, scoring="neg_root_mean_squared_error")
-    return -scores.mean()
+    rmses = -scores
+    return rmses.mean(), rmses.std()
 
 def rmse_cv_score_catboost(params, X, y, cat_features, cv):
     fold_rmses = []
@@ -41,7 +44,8 @@ def rmse_cv_score_catboost(params, X, y, cat_features, cv):
         model.fit(X_tr, y_tr, cat_features=cat_features)
         pred = model.predict(X_val)
         fold_rmses.append(np.sqrt(mean_squared_error(y_val, pred)))
-    return np.mean(fold_rmses)
+    fold_rmses = np.array(fold_rmses)
+    return fold_rmses.mean(), fold_rmses.std()
 
 def rmse_cv_score_lightgbm(params, X, y, cat_features, cv):
     fold_rmses = []
@@ -57,38 +61,38 @@ def rmse_cv_score_lightgbm(params, X, y, cat_features, cv):
         model.fit(X_tr, y_tr, categorical_feature=cat_features)
         pred = model.predict(X_val)
         fold_rmses.append(np.sqrt(mean_squared_error(y_val, pred)))
-    return np.mean(fold_rmses)
+    fold_rmses = np.array(fold_rmses)
+    return fold_rmses.mean(), fold_rmses.std()
 
 
-def greed_search(model_class, param_grid, fixed_params, X, y, cv, catboost = False, light = False):
+def greed_search(model_class, param_grid, fixed_params, X, y, cv, catboost=False, light=False):
     best_params = dict(fixed_params)
 
     model = model_class(**best_params)
     if catboost:
-        best_score = rmse_cv_score_catboost(best_params, X, y, CAT_FEATURES, cv)
+        best_score, best_std = rmse_cv_score_catboost(best_params, X, y, CAT_FEATURES, cv)
     elif light:
-        best_score = rmse_cv_score_lightgbm(best_params, X, y, CAT_FEATURES, cv)
+        best_score, best_std = rmse_cv_score_lightgbm(best_params, X, y, CAT_FEATURES, cv)
     else:
-        best_score = rmse_cv_score(model, X, y, cv)
+        best_score, best_std = rmse_cv_score(model, X, y, cv)
 
     for param_name, values in param_grid.items():
         for value in values:
             params = {**best_params, param_name: value}
             model = model_class(**params)
             if catboost:
-                score = rmse_cv_score_catboost(params, X, y, CAT_FEATURES, cv)
+                score, std = rmse_cv_score_catboost(params, X, y, CAT_FEATURES, cv)
             elif light:
-                score = rmse_cv_score_lightgbm(params, X, y, CAT_FEATURES, cv)
+                score, std = rmse_cv_score_lightgbm(params, X, y, CAT_FEATURES, cv)
             else:
-                score = rmse_cv_score(model, X, y, cv)
-
+                score, std = rmse_cv_score(model, X, y, cv)
 
             if score < best_score:
                 best_params[param_name] = value
                 best_score = score
+                best_std = std
 
-
-    return best_params, best_score
+    return best_params, best_score, best_std
 
 param_grid = {
     "Ridge": {
@@ -144,9 +148,12 @@ results = []
 
 start_time = time.perf_counter()
 for name in param_grid:
-    best_params, best_score = greed_search(sklearn_model_classes[name], param_grid[name],sklearn_fixed_params[name], X_encoded, y, cv)
-    results.append({"model": name, "rmse": best_score, "best_params": best_params})
-    print(f"{name}:  rmse={best_score}  params={best_params}")
+    data_X = X_scaled if name in SCALED_MODELS else X_encoded
+    best_params, best_score, best_std = greed_search(
+        sklearn_model_classes[name], param_grid[name], sklearn_fixed_params[name], data_X, y, cv
+    )
+    results.append({"model": name, "rmse": best_score, "std": best_std, "best_params": best_params})
+    print(f"{name}:  rmse={best_score:.5f}  std={best_std:.5f}  params={best_params}")
 
 
 catboost_param_grid = {
@@ -161,9 +168,11 @@ lightgbm_param_grid = {
     "learning_rate": [0.01, 0.05, 0.1],
 }
 
-best_params, best_score = greed_search(CatBoostRegressor, catboost_param_grid, catboost_fixed_params,X, y, cv, catboost=True)
-results.append({"model": "CatBoost", "rmse": best_score, "best_params": best_params})
-print(f"CatBoost:  rmse={best_score}  params={best_params}")
+best_params, best_score, best_std = greed_search(
+    CatBoostRegressor, catboost_param_grid, catboost_fixed_params, X, y, cv, catboost=True
+)
+results.append({"model": "CatBoost", "rmse": best_score, "std": best_std, "best_params": best_params})
+print(f"CatBoost:  rmse={best_score:.5f}  std={best_std:.5f}  params={best_params}")
 
 results_df = pd.DataFrame(results).sort_values("rmse")
 results_df.to_csv(f"{save_dir}/model_comparison.csv", index=False)
@@ -178,9 +187,11 @@ best_params = best_row["best_params"]
 
 if best_model_name in sklearn_model_classes:
     model_class = sklearn_model_classes[best_model_name]
+    data_X = X_scaled if best_model_name in SCALED_MODELS else X_encoded
+    data_X_test = X_test_scaled if best_model_name in SCALED_MODELS else X_test_encoded
     model = model_class(**best_params)
-    model.fit(X_encoded, y)
-    predictions_log = model.predict(X_test_encoded)
+    model.fit(data_X, y)
+    predictions_log = model.predict(data_X_test)
 
 elif best_model_name == "CatBoost":
     model = CatBoostRegressor(**best_params, verbose=0)
