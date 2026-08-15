@@ -1,5 +1,5 @@
 general:
-  experiment_name: optuna
+  experiment_name: optuna_optuna_best
   seed: 1
   task_type: regression
   dataset: house_prices
@@ -7,21 +7,20 @@ general:
 paths:
   train_csv: ./data/train.csv
   test_csv: ./data/test.csv
-  output_dir: ./outputs/${general.experiment_name}
+  output_dir: ./outputs/optuna_optuna_best
 split:
   n_splits: 5
 model:
   params:
     hidden_dims:
-    - 16
     - 8
-    dropout_rate: 0.0
+    dropout_rate: 0.19197576230074997
 training:
   device: cuda
   epochs: 50
   batch_size: 16
-  lr: 0.001
-  weight_decay: 1.0e-05
+  lr: 0.009405078756121349
+  weight_decay: 0.00331302516285362
   scheduler_epochs: 10
   scheduler_rate: 0.5
 dataloader:
