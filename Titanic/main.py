@@ -25,8 +25,6 @@ def seed_everything(seed: int):
 
 
 def train(cfg, device, X, y):
-    # обучает по 1 модели на фолд, сохраняет лучший чекпоинт каждого фолда,
-    # возвращает OOF-предсказания (вероятности) для честной оценки качества
     oof_predictions = np.zeros(len(y))
     fold_accuracies = []
 

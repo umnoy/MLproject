@@ -22,8 +22,8 @@ os.makedirs(save_dir, exist_ok=True)
 
 
 X, y, X_test, CAT_FEATURES, IDs = prepare_data(train_data_path, test_data_path, dummies=False)
-X_encoded, y, X_test_encoded, _, IDs = prepare_data(train_data_path, test_data_path, dummies=True)
-X_scaled, y, X_test_scaled, _, IDs = prepare_data(train_data_path, test_data_path, dummies=True, scale=True)
+X_encoded, y, X_test_encoded, _, IDs = prepare_data(train_data_path, test_data_path, dummies=True) #для моделей которым нужен one-hot
+X_scaled, y, X_test_scaled, _, IDs = prepare_data(train_data_path, test_data_path, dummies=True, scale=True) #для моделей которым нужен скейлинг
 
 cv = KFold(n_splits=5, shuffle=True, random_state=1)
 SCALED_MODELS = {"Ridge", "Lasso", "ElasticNet", "KNN"}

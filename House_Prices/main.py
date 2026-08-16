@@ -15,7 +15,7 @@ from omegaconf import OmegaConf
 
 DATASETS = {
     'house_prices': prepare_data,
-    # 'titanic': prepare_titanic_data,  -- вернуть, когда появится реальный импорт функции
+    # 'titanic': prepare_titanic_data,
 }
 
 
@@ -23,12 +23,14 @@ def seed_everything(seed: int):
     np.random.seed(seed)
     torch.manual_seed(seed)
     if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)  # просто в привычку на случай нескольких gpu
+        torch.cuda.manual_seed_all(seed)  #просто в привычку на случай нескольких gpu
 
 
 def train(cfg, device, X, y):
-    # обучает по 1 модели на фолд, сохраняет лучший чекпоинт каждого фолда,
-    # возвращает OOF-предсказания для честной оценки качества (RMSE на логарифме таргета)
+    """
+    обучает по 1 модели на фолд, сохраняет лучший чекпоинт каждого фолда,
+    возвращает OOF-предсказания
+    """
     oof_predictions = np.zeros(len(y))
     fold_rmses = []
 
@@ -84,7 +86,7 @@ def train(cfg, device, X, y):
                     val_preds_list.append(preds.cpu().numpy())
                     val_targets_list.append(y_batch.numpy())
 
-            predi = np.concatenate(val_preds_list).squeeze()
+            predi = np.concatenate(val_preds_list).squeeze() #делаем из них плоский вектор чтоб нормально метррка считалась
             targ = np.concatenate(val_targets_list).squeeze()
 
             rmse = np.sqrt(mean_squared_error(targ, predi))
@@ -181,8 +183,8 @@ def main(config_path="config.yaml"):
         cfg.paths.train_csv, cfg.paths.test_csv, cfg.general.id_column, dummies=True, scale=False
     )
     X = X_df.values
-    y = y_df.values.astype(np.float32)# MSELoss ждёт ту же форму, что и выход модели
-
+    y = y_df.values.astype(np.float32) 
+    
     train(cfg, device, X, y)
     predict(cfg, device, X, X_test_df, id_column_values)
 

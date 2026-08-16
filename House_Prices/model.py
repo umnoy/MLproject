@@ -3,6 +3,9 @@ import torch.nn as nn
 from torch.utils.data import Dataset
 
 class TabularDataset(Dataset):
+    """
+    подает данные через dataloader
+    """
     def __init__(self, X, y=None):
         self.X = torch.tensor(X, dtype=torch.float32)
         self.y = torch.tensor(y, dtype=torch.float32).unsqueeze(1) if y is not None else None

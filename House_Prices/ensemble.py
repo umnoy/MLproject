@@ -27,6 +27,9 @@ LGB_PARAMS = dict(n_estimators=720, learning_rate=0.05, num_leaves=5,
 
 
 class AveragingModels(BaseEstimator, RegressorMixin, TransformerMixin):
+    '''
+    класс для простого усреднения, ничего особенного, просто выдает усредненное значение моделей которые входят в ансамбль
+    '''
     def __init__(self, models):
         self.models = models
 
@@ -42,6 +45,9 @@ class AveragingModels(BaseEstimator, RegressorMixin, TransformerMixin):
 
 
 class StackingAveragedModels(BaseEstimator, RegressorMixin, TransformerMixin):
+    """
+    класс для стекинга
+    """
     def __init__(self, base_models, meta_model, n_folds=N_FOLDS):
         self.base_models = base_models
         self.meta_model = meta_model
@@ -58,13 +64,16 @@ class StackingAveragedModels(BaseEstimator, RegressorMixin, TransformerMixin):
                 instance = clone(model)
                 self.base_models_[i].append(instance)
                 instance.fit(X[train_index], y[train_index])
-                y_pred = instance.predict(X[holdout_index])
+                y_pred = instance.predict(X[holdout_index]) #каждая модель делает предсказания на отложенном фолде
                 out_of_fold_predictions[holdout_index, i] = y_pred
 
         self.meta_model_.fit(out_of_fold_predictions, y)
         return self
 
     def predict(self, X):
+        """
+        каждая модель делает предсказания, затем показания усредняются, стобцы с ними объединяются в meta features
+        """
         meta_features = np.column_stack([np.column_stack([model.predict(X) for model in base_models]).mean(axis=1) for base_models in self.base_models_])
         return self.meta_model_.predict(meta_features)
 

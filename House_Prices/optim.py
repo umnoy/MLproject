@@ -21,7 +21,7 @@ def objective(trial, base_cfg, device, X, y, search_output_dir):
     cfg.split.n_splits = 3
     cfg.training.epochs = min(cfg.training.epochs, 15)#урезаем для скорости поиска
 
-    cfg.paths.output_dir = os.path.join(search_output_dir, f"trial_{trial.number}")
+    cfg.paths.output_dir = os.path.join(search_output_dir, f"trial_{trial.number}") #у каждого trial своя папка, чтобы не перезаписывать логи/чекпоинты других попыток
     os.makedirs(cfg.paths.output_dir, exist_ok=True)
 
     oof_predictions = train(cfg, device, X, y)
@@ -54,7 +54,7 @@ def main(config_path="config.yaml", n_trials=30):
     print("лучшие параметры:", study.best_params)
     print("лучший RMSE:", study.best_value)
 
-
+    #собирается новый конфиг, берется базовый и подставляются найденные лучшие параметры
     best_cfg = OmegaConf.merge(base_cfg, {})
     best_cfg.model.params.hidden_dims = study.best_params["hidden_dims"]
     best_cfg.model.params.dropout_rate = study.best_params["dropout_rate"]
